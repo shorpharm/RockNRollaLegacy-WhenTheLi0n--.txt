@@ -1,0 +1,38 @@
+name: "Auto-update malware/phishing filters"
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * *" # Runs daily at 03:00 UTC
+
+jobs:
+  update-malware:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Hagezi TIF Mini
+        run: |
+          curl -sSL https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/tif-mini.txt -o /tmp/hagezi-tif-mini.txt
+
+      - name: Download DandelionSprout Mobile Malware
+        run: |
+          curl -sSL https://raw.githubusercontent.com/DandelionSprout/adfilt/master/MobileMalwareSources/adblock.txt -o /tmp/dandelionsprout-mobile-malware.txt
+
+      - name: Merge lists and create auto-malware.txt
+        run: |
+          echo "! Combined Hagezi TIF Mini & DandelionSprout Mobile Malware (auto-updated daily)" > filters/auto-malware.txt
+          echo "! Source 1: https://github.com/hagezi/dns-blocklists" >> filters/auto-malware.txt
+          echo "! Source 2: https://github.com/DandelionSprout/adfilt" >> filters/auto-malware.txt
+          echo "" >> filters/auto-malware.txt
+          cat /tmp/hagezi-tif-mini.txt >> filters/auto-malware.txt
+          echo "" >> filters/auto-malware.txt
+          cat /tmp/dandelionsprout-mobile-malware.txt >> filters/auto-malware.txt
+
+      - name: Commit and push if changed
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add filters/auto-malware.txt
+          git diff --cached --quiet || git commit -m "Auto-update malware filters from Hagezi TIF Mini and DandelionSprout"
+          git push
