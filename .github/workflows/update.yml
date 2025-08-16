@@ -1,4 +1,7 @@
 name: "Auto-update malware/phishing filters"
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
   schedule:
