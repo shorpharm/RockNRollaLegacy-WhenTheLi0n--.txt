@@ -21,32 +21,28 @@ jobs:
         run: |
           mkdir -p filters
 
-      - name: Download Hagezi TIF Mini
+      - name: Download and merge filter lists
         run: |
+          # Download filters
           curl -sSL https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/tif.mini.txt -o /tmp/hagezi-tif-mini.txt
-
-      - name: Download DandelionSprout Mobile Malware
-        run: |
           curl -sSL https://raw.githubusercontent.com/DandelionSprout/adfilt/master/MobileMalwareSources/adblock.txt -o /tmp/dandelionsprout-mobile-malware.txt
+          
+          # Create combined filter
+          {
+            echo "! Combined Hagezi TIF Mini & DandelionSprout Mobile Malware (auto-updated daily)"
+            echo "! Source 1: https://github.com/hagezi/dns-blocklists" 
+            echo "! Source 2: https://github.com/DandelionSprout/adfilt"
+            echo "! Last updated: $(date -u)"
+            echo ""
+            cat /tmp/hagezi-tif-mini.txt
+            echo ""
+            cat /tmp/dandelionsprout-mobile-malware.txt
+          } > filters/auto-malware.txt
 
-      - name: Merge lists and create auto-malware.txt
-        run: |
-          echo "! Combined Hagezi TIF Mini & DandelionSprout Mobile Malware (auto-updated daily)" > filters/auto-malware.txt
-          echo "! Source 1: https://github.com/hagezi/dns-blocklists" >> filters/auto-malware.txt
-          echo "! Source 2: https://github.com/DandelionSprout/adfilt" >> filters/auto-malware.txt
-          echo "! Last updated: $(date -u)" >> filters/auto-malware.txt
-          echo "" >> filters/auto-malware.txt
-          cat /tmp/hagezi-tif-mini.txt >> filters/auto-malware.txt
-          echo "" >> filters/auto-malware.txt
-          cat /tmp/dandelionsprout-mobile-malware.txt >> filters/auto-malware.txt
-
-      - name: Commit and push if changed
+      - name: Auto-commit changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Auto-update malware filters from Hagezi TIF Mini and DandelionSprout"
-          branch: main
+          commit_message: "🛡️ Auto-update malware filters - $(date -u +'%Y-%m-%d %H:%M UTC')"
           file_pattern: 'filters/auto-malware.txt'
           commit_user_name: github-actions[bot]
           commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
-          skip_dirty_check: false
-          skip_fetch: false
