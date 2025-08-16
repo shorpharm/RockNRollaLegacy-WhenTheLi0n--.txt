@@ -14,11 +14,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create filters directory
+        run: |
+          mkdir -p filters
 
       - name: Download Hagezi TIF Mini
         run: |
-          curl -sSL https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/tif-mini.txt -o /tmp/hagezi-tif-mini.txt
+          curl -sSL https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/tif.mini.txt -o /tmp/hagezi-tif-mini.txt
 
       - name: Download DandelionSprout Mobile Malware
         run: |
@@ -29,15 +34,19 @@ jobs:
           echo "! Combined Hagezi TIF Mini & DandelionSprout Mobile Malware (auto-updated daily)" > filters/auto-malware.txt
           echo "! Source 1: https://github.com/hagezi/dns-blocklists" >> filters/auto-malware.txt
           echo "! Source 2: https://github.com/DandelionSprout/adfilt" >> filters/auto-malware.txt
+          echo "! Last updated: $(date -u)" >> filters/auto-malware.txt
           echo "" >> filters/auto-malware.txt
           cat /tmp/hagezi-tif-mini.txt >> filters/auto-malware.txt
           echo "" >> filters/auto-malware.txt
           cat /tmp/dandelionsprout-mobile-malware.txt >> filters/auto-malware.txt
 
       - name: Commit and push if changed
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add filters/auto-malware.txt
-          git diff --cached --quiet || git commit -m "Auto-update malware filters from Hagezi TIF Mini and DandelionSprout"
-          git push
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Auto-update malware filters from Hagezi TIF Mini and DandelionSprout"
+          branch: main
+          file_pattern: 'filters/auto-malware.txt'
+          commit_user_name: github-actions[bot]
+          commit_user_email: 41898282+github-actions[bot]@users.noreply.github.com
+          skip_dirty_check: false
+          skip_fetch: false
